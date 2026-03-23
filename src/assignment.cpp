@@ -1,5 +1,4 @@
 #include "../include/assignment.h"
-
 // Build cost matrix using Dijkstra for each ambulance
 // cost[i][j] = travel time from ambulance i to accident j
 vector<vector<int>> buildCostMatrix(vector<Ambulance>& ambulances, vector<Accident>& accidents) {
