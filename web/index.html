@@ -101,20 +101,39 @@
                 </div>
             </div>
 
-            <!-- Hospital Final Confirmation Notification -->
+            <!-- Hospital Final Confirmation Notification (Top Left) -->
             <div id="victimFinalDetails" class="card hidden victim-form" style="top: 80px;">
-                <h2>Active Rescue Mission</h2>
-                
-                <div class="confirmed-box mt-2 mb-2" style="padding:15px; text-align:left;">
-                    <h3 style="color: var(--success); margin-bottom: 5px;">✅ Admission Secured</h3>
-                    <p id="vDetailHospName" style="color: white; font-weight: bold; margin-bottom: 5px;">Hospital: --</p>
-                    <p id="vDetailWard" style="color: #94a3b8; font-size: 14px; margin-bottom: 2px;">Ward: --</p>
-                    <p id="vDetailDoc" style="color: #94a3b8; font-size: 14px;">Hospital Desk: --</p>
-                </div>
-                
+                <h3 style="color: var(--success); margin-bottom: 5px;">✅ Admission Secured</h3>
+                <p id="vDetailHospName" style="color: white; font-weight: bold; margin-bottom: 5px;">Hospital: --</p>
                 <div class="split-btn mt-2 mb-2">
-                    <button class="btn btn-primary" id="btnCallHospital" onclick="alert('Calling Hospital Desk...')">📞 Call Hospital</button>
-                    <button class="btn btn-warning" id="btnRequestHalfway" style="color:black;" onclick="requestHalfwayDoc()">🚨 Request Halfway Doc</button>
+                    <button class="btn btn-primary w-100" id="btnCallHospital" onclick="alert('Calling...')">📞 Call Hospital</button>
+                    <button class="btn btn-warning w-100" id="btnRequestHalfway" style="color:black;" onclick="requestHalfwayDoc()">🚨 Request Doc</button>
+                </div>
+            </div>
+
+            <!-- Victim Complete Information Panel (Right Side) -->
+            <div id="victimActiveMissionPanel" class="card hidden" style="position: absolute; right: 20px; top: 80px; width: 350px; padding: 24px; border-radius: 16px; border: 1px solid #334155; max-height: calc(100vh - 120px); overflow-y: auto;">
+                <h2 style="font-family: var(--font-heading); color: var(--accent); border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px;">Live Rescue Details</h2>
+                
+                <h3 style="color:#94a3b8; font-size:14px; margin-bottom:5px;">Patient Information</h3>
+                <div style="background:#0f172a; border-radius:8px; padding:12px; margin-bottom:15px; border:1px solid #334155;">
+                    <p style="font-size:13px;">Mobile: <strong id="vpInfoPhone" style="color:white;">--</strong></p>
+                    <p style="font-size:13px; margin-top:4px;">Condition: <strong id="vpInfoCond" style="color:white;">--</strong></p>
+                    <p style="font-size:13px; margin-top:4px;">Evacuation: <strong id="vpInfoStrat" style="color:white;">--</strong></p>
+                </div>
+
+                <h3 style="color:#94a3b8; font-size:14px; margin-bottom:5px;">Driver Information</h3>
+                <div style="background:#0f172a; border-radius:8px; padding:12px; margin-bottom:15px; border:1px solid #10b981;">
+                    <p style="font-size:13px;">Name: <strong id="vdInfoName" style="color:white;">--</strong></p>
+                    <p style="font-size:13px; margin-top:4px;">Mobile: <strong id="vdInfoPhone" style="color:white;">--</strong></p>
+                    <p style="font-size:13px; margin-top:4px;">Car No: <strong id="vdInfoCar" style="color:var(--warning);">--</strong></p>
+                </div>
+
+                <h3 style="color:#94a3b8; font-size:14px; margin-bottom:5px;">Hospital Destination</h3>
+                <div style="background:#0f172a; border-radius:8px; padding:12px; border:1px solid #3b82f6;">
+                    <p style="font-size:13px;">Hospital: <strong id="vhInfoName" style="color:white;">--</strong></p>
+                    <p style="font-size:13px; margin-top:4px;">Ward/Bed: <strong id="vhInfoWard" style="color:white;">--</strong></p>
+                    <p style="font-size:13px; margin-top:4px;">Desk Contact: <strong id="vhInfoContact" style="color:white;">--</strong></p>
                 </div>
             </div>
 
@@ -122,7 +141,28 @@
             <!-- 2. DRIVER MODULE UI                            -->
             <!-- ============================================== -->
             <div id="driverUI" class="module-overlay hidden">
-                
+                <div class="card driver-dashboard" id="driverInitTools" style="z-index: 1000; left: 20px; top: 80px; width: 350px;">
+                     <h2 style="font-family: var(--font-heading); margin-bottom: 5px;">Rapido Driver Hub</h2>
+                     <p class="subtitle mb-2" style="font-size: 13px; color: #94a3b8;">Click anywhere on the map to login a new driver.</p>
+                     
+                     <div id="driverRegistrationModal" class="hidden" style="background:#0f172a; border:2px solid var(--accent); border-radius:12px; padding:15px; margin-top:10px;">
+                         <h3 style="color:white; margin-bottom:10px; font-size:16px;">Register New Ambulance</h3>
+                         <div class="form-group mb-2">
+                             <label style="color:#cbd5e1; font-size:12px; margin-bottom:4px; display:block;">Driver Name:</label>
+                             <input type="text" id="dRegName" placeholder="e.g., Rajesh Kumar" style="width:100%; padding:8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:white;">
+                         </div>
+                         <div class="form-group mb-2">
+                             <label style="color:#cbd5e1; font-size:12px; margin-bottom:4px; display:block;">Mobile Number:</label>
+                             <input type="text" id="dRegPhone" placeholder="+91..." style="width:100%; padding:8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:white;">
+                         </div>
+                         <div class="form-group mb-2">
+                             <label style="color:#cbd5e1; font-size:12px; margin-bottom:4px; display:block;">Vehicle Plate No:</label>
+                             <input type="text" id="dRegPlate" placeholder="UK07-AB-1234" style="width:100%; padding:8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:white;">
+                         </div>
+                         <button class="btn btn-primary w-100" onclick="submitDriverRegistration()">Go Online & Mark Location</button>
+                     </div>
+                </div>
+
                 <!-- Ping Request Overlay -->
                 <div class="ping-overlay hidden" id="driverPingOverlay">
                     <div class="ping-box">
@@ -212,7 +252,15 @@
                         </div>
 
                         <button class="btn btn-secondary w-100 mb-2 mt-2" onclick="alert('Bed 404 Fast-Tracked')">Allocate Fast-Track Bed</button>
-                        <button class="btn btn-primary w-100" onclick="alert('Digital Triage Sent to Driver Screen!')">Send Triage Checklist to Driver</button>
+                        <button class="btn btn-primary w-100 mb-2" onclick="alert('Digital Triage Sent to Driver Screen!')">Send Triage Checklist to Driver</button>
+                    </div>
+
+                    <!-- Permanent Registered Cases -->
+                    <div id="hRegisteredCasesContainer" style="margin-top: 20px;">
+                        <h3 style="font-family: var(--font-heading); color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 5px; margin-bottom: 10px;">Registered Cases</h3>
+                        <div id="hRegisteredCasesList" style="display:flex; flex-direction:column; gap:10px;">
+                            <p style="color:#64748b; font-size:13px; text-align:center;">No cases registered yet.</p>
+                        </div>
                     </div>
                 </div>
             </div>

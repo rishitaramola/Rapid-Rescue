@@ -119,7 +119,6 @@ map.on('click', function(e) {
             icon: L.divIcon({ className: 'custom-icon', html: html, iconSize:[34,34], iconAnchor:[17,17]})
         }).addTo(map);
 
-        // CLICK TO REMOVE VICTIM
         StateHub.tempVictimMarker.on('click', (ev) => {
             L.DomEvent.stopPropagation(ev);
             map.removeLayer(StateHub.tempVictimMarker);
@@ -129,9 +128,37 @@ map.on('click', function(e) {
 
         document.getElementById('victimFormCard').classList.remove('hidden');
     } else if (activeTab.includes('Driver')) {
-        spawnDriver(lat, lng);
+        StateHub.tempDriverLatLng = {lat, lng};
+        document.getElementById('driverRegistrationModal').classList.remove('hidden');
     }
 });
+
+function submitDriverRegistration() {
+    let lat = StateHub.tempDriverLatLng.lat;
+    let lng = StateHub.tempDriverLatLng.lng;
+    let name = document.getElementById('dRegName').value || "Guest Driver";
+    let phone = document.getElementById('dRegPhone').value || "No Context";
+    let plate = document.getElementById('dRegPlate').value || "UK--Temp";
+
+    let n = graphNodes[0]; 
+    let minDist = Infinity;
+    graphNodes.forEach(node => {
+        let d = Math.hypot(node.lat - lat, node.lng - lng);
+        if (d < minDist) { minDist = d; n = node; }
+    });
+    
+    let id = ambulances.length + 1;
+    ambulances.push({ id: id, lat: lat, lng: lng, name: name, phone: phone, plate: plate });
+    
+    let html = `<div style="background: #3b82f6; width:28px; height:28px; border-radius:50%; border:3px solid #fff; box-shadow: 0 0 15px #3b82f6; display:flex; align-items:center; justify-content:center; font-size:14px;">🚑</div>`;
+    L.marker([lat, lng], {
+        icon: L.divIcon({ className: 'custom-icon', html: html, iconSize:[34,34], iconAnchor:[17,17]})
+    }).addTo(map);
+
+    document.getElementById('driverRegistrationModal').classList.add('hidden');
+}
+
+function spawnDriver(lat, lng) {}
 
 
 // ============================================
@@ -272,7 +299,13 @@ function driverReject() {
 function driverAccept() {
     clearInterval(StateHub.pingTimerInt);
     document.getElementById('driverPingOverlay').classList.add('hidden');
-    document.getElementById('driverDashboard').classList.remove('hidden');
+    // We intentionally don't explicitly show 'driverDashboard' here anymore 
+    // because standard flow switches to tracking UI.
+    
+    alert("Ride accepted. Awaiting Hospital Confirmation... Meanwhile, your GPS is routing to Victim.");
+    
+    // NEW: IMMEDIATELY render Driver -> Victim Route
+    drawDriverToVictimRoute();
     
     updateStatusUI(2);
     
@@ -333,20 +366,39 @@ function hospitalConfirm() {
         if(n) hospName = n.name;
     }
     document.getElementById('vDetailHospName').innerText = "Hospital: " + hospName;
-    document.getElementById('vDetailWard').innerText = "Ward: " + (StateHub.severity == 1 ? "ICU (Trauma) - Bed 04" : "ER Triage Area - Bed 12");
     
     // Wire up Hospital Desk Number to Victim
     let deskPhone = document.getElementById('hospDeskPhoneInput').value || "+91 (Hospital Reception)";
-    document.getElementById('vDetailDoc').innerText = "Hospital Desk: " + deskPhone;
-    document.getElementById('btnCallHospital').onclick = function() {
-        alert("Dialing Hospital Desk: " + deskPhone);
-    };
+    
+    let vWard = (StateHub.severity == 1 ? "ICU (Trauma) - Bed 04" : "ER Triage Area - Bed 12");
 
-    // Reset contact form
-    document.getElementById('vContactForm').classList.remove('hidden');
-    document.getElementById('vPhoneInput').value = '';
-    document.getElementById('vContactSuccess').classList.add('hidden');
-    document.getElementById('hospContactBox').classList.add('hidden');
+    // SETUP NEW VICTIM COMPLETE TRACKING DASHBOARD
+    let assignedAmb = ambulances.find(a => a.id == StateHub.assignedAmbId) || ambulances[0];
+    document.getElementById('vpInfoPhone').innerText = StateHub.victimPhone;
+    document.getElementById('vpInfoCond').innerText = StateHub.condition;
+    document.getElementById('vpInfoStrat').innerText = StateHub.strategy;
+    
+    document.getElementById('vdInfoName').innerText = assignedAmb.name || "Guest Driver";
+    document.getElementById('vdInfoPhone').innerText = assignedAmb.phone || "+91 (Dispatched)";
+    document.getElementById('vdInfoCar').innerText = assignedAmb.plate || "UKXX-XXXX";
+    
+    document.getElementById('vhInfoName').innerText = hospName;
+    document.getElementById('vhInfoWard').innerText = vWard;
+    document.getElementById('vhInfoContact').innerText = deskPhone;
+
+    document.getElementById('victimFinalDetails').classList.add('hidden'); // Hide small card
+    document.getElementById('victimActiveMissionPanel').classList.remove('hidden'); // Show huge tracker!
+
+    // ADD PERSISTENT REGISTERED CASE TO HOSPITAL
+    let caseHtml = `<div style="background:rgba(16, 185, 129, 0.1); border:1px solid #10b981; padding:10px; border-radius:6px;">
+        <p style="color:white; font-size:13px; font-weight:bold;">Victim: ${StateHub.victimPhone} (Severity: ${StateHub.severity})</p>
+        <p style="color:#94a3b8; font-size:12px; margin-top:2px;">Condition: ${StateHub.condition}</p>
+        <p style="color:#10b981; font-size:12px; margin-top:5px;">Assigned Bed: ${vWard}</p>
+    </div>`;
+    
+    let listContainer = document.getElementById('hRegisteredCasesList');
+    if(listContainer.innerText.includes("No cases")) listContainer.innerHTML = "";
+    listContainer.innerHTML += caseHtml;
 
     drawFinalRoute();
 }
@@ -434,6 +486,32 @@ function callVictimFromDriver() {
 }
 
 let currentRoutingControl = null;
+
+function drawDriverToVictimRoute() {
+    if(!StateHub.victimLatLng) return;
+    
+    let assignedAmb = ambulances.find(a => a.id == StateHub.assignedAmbId) || ambulances[0];
+    
+    if(currentRoutingControl) {
+        map.removeControl(currentRoutingControl);
+    }
+    
+    currentRoutingControl = L.Routing.control({
+        waypoints: [
+            L.latLng(assignedAmb.lat, assignedAmb.lng),
+            L.latLng(StateHub.victimLatLng.lat, StateHub.victimLatLng.lng)
+        ],
+        lineOptions: {
+            styles: [{color: '#10b981', opacity: 0.9, weight: 6}] // Green for intermediate
+        },
+        createMarker: function() { return null; }, 
+        addWaypoints: false,
+        draggableWaypoints: false,
+        fitSelectedRoutes: true,
+        showAlternatives: false,
+        show: false 
+    }).addTo(map);
+}
 
 function drawFinalRoute() {
     if(!StateHub.victimLatLng || !StateHub.selectedHospitalId) return;

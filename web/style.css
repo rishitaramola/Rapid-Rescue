@@ -80,7 +80,8 @@ body { font-family: var(--font-body); overflow: hidden; background: #000; color:
 .split-btn .btn { flex: 1; padding: 16px; font-size: 18px; }
 
 /* Driver & Hospital Shared UI Layout */
-.driver-dashboard, .hospital-dashboard { position: absolute; right: 20px; top: 20px; width: 380px; padding: 24px; border-radius: 16px; border: 1px solid #334155; }
+.driver-dashboard { position: absolute; right: 20px; top: 20px; width: 380px; padding: 24px; border-radius: 16px; border: 1px solid #334155; }
+.hospital-dashboard { position: absolute; right: 20px; top: 20px; width: 380px; padding: 24px; border-radius: 16px; border: 1px solid #334155; max-height: calc(100vh - 120px); overflow-y: auto; overflow-x: hidden;}
 .driver-dashboard h2, .hospital-dashboard h2 { font-family: var(--font-heading); border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px;}
 .negotiation-phase select { width: 100%; padding: 10px; margin-top:5px; background: #0f172a; color: white; border-radius: 6px; }
 .pending-box { background: rgba(245, 158, 11, 0.2); border-left: 4px solid var(--warning); padding: 15px; color: #fbbf24; border-radius: 8px; font-weight: 500; font-size: 14px; text-align: center;}
