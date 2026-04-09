@@ -45,6 +45,11 @@
                     <p class="subtitle">Click on the map to set location, then fill this form.</p>
                     
                     <div class="form-group">
+                        <label>Number of Patients:</label>
+                        <input type="number" id="vPatientCount" value="1" min="1" max="15">
+                    </div>
+
+                    <div class="form-group">
                         <label>Condition / Specific Detail:</label>
                         <input type="text" id="vCondition" placeholder="e.g. Cardiac Arrest, Severe Fracture">
                     </div>
@@ -117,7 +122,8 @@
                 
                 <h3 style="color:#94a3b8; font-size:14px; margin-bottom:5px;">Patient Information</h3>
                 <div style="background:#0f172a; border-radius:8px; padding:12px; margin-bottom:15px; border:1px solid #334155;">
-                    <p style="font-size:13px;">Mobile: <strong id="vpInfoPhone" style="color:white;">--</strong></p>
+                    <p style="font-size:13px;">Victims Count: <strong id="vpInfoCount" style="color:var(--warning);">1</strong></p>
+                    <p style="font-size:13px; margin-top:4px;">Mobile: <strong id="vpInfoPhone" style="color:white;">--</strong></p>
                     <p style="font-size:13px; margin-top:4px;">Condition: <strong id="vpInfoCond" style="color:white;">--</strong></p>
                     <p style="font-size:13px; margin-top:4px;">Evacuation: <strong id="vpInfoStrat" style="color:white;">--</strong></p>
                 </div>
@@ -220,6 +226,7 @@
                         <div class="flashing-alert">INQUIRY ALERT</div>
                         <h3 id="hInquiryCondition">Condition: Cardiac Arrest</h3>
                         <p>Severity: <strong id="hSeverity">HIGH</strong></p>
+                        <p>Patients Incoming: <strong id="hPatientCountVal" style="color:var(--warning);">1</strong></p>
                         <p>From Driver Amb-1</p>
                         
                         <div id="hospContactBox" class="mb-2" style="background:#0f172a; padding:15px; border:1px solid #3b82f6; border-radius:8px; margin-top: 15px;">

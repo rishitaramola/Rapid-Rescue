@@ -183,7 +183,8 @@ let StateHub = {
     pingTimerInt: null,
     goldenTimerInt: null,
     pingCount: 0, // Track which driver we are pinging
-    victimPhone: '--'
+    victimPhone: '--',
+    patientCount: 1
 };
 
 function switchModule(moduleName) {
@@ -237,6 +238,7 @@ function cancelVictimIntake() {
 }
 
 document.getElementById('btnSubmitVictim').addEventListener('click', () => {
+    StateHub.patientCount = document.getElementById('vPatientCount').value || 1;
     StateHub.condition = document.getElementById('vCondition').value || "Unknown Emergency";
     StateHub.severity = document.getElementById('vSeverity').value;
     StateHub.strategy = document.getElementById('vStrategy').value;
@@ -332,6 +334,7 @@ function proceedToHospitalGatekeeper() {
 
     document.getElementById('hospitalInquiryBox').classList.remove('hidden');
     document.getElementById('hInquiryCondition').innerText = "Inquiry: " + StateHub.condition;
+    document.getElementById('hPatientCountVal').innerText = StateHub.patientCount;
     document.getElementById('hPatientPhone').innerText = StateHub.victimPhone;
     
     let sLabel = StateHub.severity == 1 ? "HIGH/CRITICAL" : StateHub.severity == 2 ? "MODERATE" : "LOW";
@@ -375,6 +378,7 @@ function hospitalConfirm() {
 
     // SETUP NEW VICTIM COMPLETE TRACKING DASHBOARD
     let assignedAmb = ambulances.find(a => a.id == StateHub.assignedAmbId) || ambulances[0];
+    document.getElementById('vpInfoCount').innerText = StateHub.patientCount;
     document.getElementById('vpInfoPhone').innerText = StateHub.victimPhone;
     document.getElementById('vpInfoCond').innerText = StateHub.condition;
     document.getElementById('vpInfoStrat').innerText = StateHub.strategy;
@@ -392,7 +396,7 @@ function hospitalConfirm() {
 
     // ADD PERSISTENT REGISTERED CASE TO HOSPITAL
     let caseHtml = `<div style="background:rgba(16, 185, 129, 0.1); border:1px solid #10b981; padding:10px; border-radius:6px;">
-        <p style="color:white; font-size:13px; font-weight:bold;">Victim: ${StateHub.victimPhone} (Severity: ${StateHub.severity})</p>
+        <p style="color:white; font-size:13px; font-weight:bold;">Victim: ${StateHub.victimPhone} (Count: ${StateHub.patientCount})</p>
         <p style="color:#94a3b8; font-size:12px; margin-top:2px;">Condition: ${StateHub.condition}</p>
         <p style="color:#10b981; font-size:12px; margin-top:5px;">Assigned Bed: ${vWard}</p>
     </div>`;
