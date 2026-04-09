@@ -159,7 +159,10 @@
                              <label style="color:#cbd5e1; font-size:12px; margin-bottom:4px; display:block;">Vehicle Plate No:</label>
                              <input type="text" id="dRegPlate" placeholder="UK07-AB-1234" style="width:100%; padding:8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:white;">
                          </div>
-                         <button class="btn btn-primary w-100" onclick="submitDriverRegistration()">Go Online & Mark Location</button>
+                         <div class="split-btn mt-2">
+                             <button class="btn btn-secondary w-100" onclick="document.getElementById('driverRegistrationModal').classList.add('hidden')">Cancel</button>
+                             <button class="btn btn-primary w-100" onclick="submitDriverRegistration()">Go Online</button>
+                         </div>
                      </div>
                 </div>
 
