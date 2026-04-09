@@ -160,6 +160,16 @@ function submitDriverRegistration() {
     }).addTo(map);
 
     document.getElementById('driverRegistrationModal').classList.add('hidden');
+
+    let driverHtml = `<div style="background:rgba(59, 130, 246, 0.1); border:1px solid #3b82f6; padding:10px; border-radius:6px; margin-bottom:8px;">
+        <p style="color:white; font-size:13px; font-weight:bold;">${name} (${plate})</p>
+        <p style="color:#94a3b8; font-size:12px; margin-top:2px;">Contact: ${phone}</p>
+        <p style="color:#3b82f6; font-size:12px; margin-top:5px;">Status: Online & Mapped</p>
+    </div>`;
+    
+    let listContainer = document.getElementById('dRegisteredList');
+    if(listContainer.innerText.includes("No fleet")) listContainer.innerHTML = "";
+    listContainer.innerHTML += driverHtml;
 }
 
 function spawnDriver(lat, lng) {}
