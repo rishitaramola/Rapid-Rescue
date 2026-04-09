@@ -30,7 +30,7 @@
             <div id="map"></div>
 
             <!-- ============================================== -->
-            <!-- 1. VICTIM MODULE UI                            -->
+            <!-- 1. PATIENT MODULE UI                           -->
             <!-- ============================================== -->
             <div id="victimUI" class="module-overlay hidden">
                 
@@ -84,7 +84,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Victim Mobile Number:</label>
+                        <label>Patient Mobile Number:</label>
                         <input type="text" id="vInitPhone" placeholder="+91...">
                     </div>
 
@@ -106,7 +106,7 @@
                 </div>
             </div>
 
-            <!-- Hospital Final Confirmation Notification (Top Left) -->
+            <!-- Patient Final Confirmation Notification (Top Left) -->
             <div id="victimFinalDetails" class="card hidden victim-form" style="top: 80px;">
                 <h3 style="color: var(--success); margin-bottom: 5px;">✅ Admission Secured</h3>
                 <p id="vDetailHospName" style="color: white; font-weight: bold; margin-bottom: 5px;">Hospital: --</p>
@@ -116,13 +116,79 @@
                 </div>
             </div>
 
-            <!-- Victim Complete Information Panel (Right Side) -->
+            <!-- ============================================== -->
+            <!-- Patient: Post-Confirmation Contact Dialog      -->
+            <!-- ============================================== -->
+            <div id="patientContactDialog" class="hidden" style="
+                position: fixed; inset: 0; background: rgba(2,6,23,0.85);
+                display: flex; align-items: center; justify-content: center;
+                z-index: 9999; backdrop-filter: blur(6px);">
+                <div style="
+                    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+                    border: 1px solid #334155; border-radius: 20px;
+                    padding: 32px; width: 380px; box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+                    animation: slideUp 0.3s ease;">
+                    <div style="text-align:center; margin-bottom: 20px;">
+                        <div style="font-size: 40px; margin-bottom: 8px;">✅</div>
+                        <h2 style="font-family: var(--font-heading); color: #10b981; font-size: 20px; margin-bottom: 6px;">Rescue Confirmed!</h2>
+                        <p style="color: #94a3b8; font-size: 13px;">Your ambulance is on the way. Bed has been reserved at the hospital.</p>
+                    </div>
+
+                    <div style="background:#0f172a; border-radius: 12px; padding: 14px; margin-bottom: 16px; border: 1px solid #1e293b;">
+                        <p style="color:#64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Assigned Hospital</p>
+                        <p id="pdHospName" style="color: white; font-weight: 600; font-size: 14px;">--</p>
+                        <p id="pdHospContact" style="color: #3b82f6; font-size: 13px; margin-top: 3px;">--</p>
+                    </div>
+
+                    <div style="background:#0f172a; border-radius: 12px; padding: 14px; margin-bottom: 20px; border: 1px solid #1e293b;">
+                        <p style="color:#64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Assigned Driver / Ambulance</p>
+                        <p id="pdDriverName" style="color: white; font-weight: 600; font-size: 14px;">--</p>
+                        <p id="pdDriverPhone" style="color: #10b981; font-size: 13px; margin-top: 3px;">--</p>
+                        <p id="pdDriverPlate" style="color: #fbbf24; font-size: 12px; margin-top: 2px;">--</p>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button onclick="callFromPatientDialog('hospital')" style="
+                            background: linear-gradient(135deg, #3b82f6, #2563eb);
+                            color: white; border: none; padding: 14px; border-radius: 12px;
+                            font-size: 15px; font-weight: 600; cursor: pointer;
+                            display: flex; align-items: center; justify-content: center; gap: 8px;
+                            transition: transform 0.15s, box-shadow 0.15s;
+                            box-shadow: 0 4px 15px rgba(59,130,246,0.35);"
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(59,130,246,0.5)'"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(59,130,246,0.35)'">
+                            🏥 Contact Hospital
+                        </button>
+                        <button onclick="callFromPatientDialog('driver')" style="
+                            background: linear-gradient(135deg, #10b981, #059669);
+                            color: white; border: none; padding: 14px; border-radius: 12px;
+                            font-size: 15px; font-weight: 600; cursor: pointer;
+                            display: flex; align-items: center; justify-content: center; gap: 8px;
+                            transition: transform 0.15s, box-shadow 0.15s;
+                            box-shadow: 0 4px 15px rgba(16,185,129,0.35);"
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(16,185,129,0.5)'"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(16,185,129,0.35)'">
+                            🚑 Contact Driver / Ambulance
+                        </button>
+                        <button onclick="closePatientContactDialog()" style="
+                            background: transparent; color: #64748b; border: 1px solid #334155;
+                            padding: 11px; border-radius: 12px; font-size: 14px; cursor: pointer;
+                            transition: color 0.2s, border-color 0.2s;"
+                            onmouseover="this.style.color='#94a3b8'; this.style.borderColor='#475569'"
+                            onmouseout="this.style.color='#64748b'; this.style.borderColor='#334155'">
+                            View Live Rescue Details →
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patient Complete Information Panel (Right Side) -->
             <div id="victimActiveMissionPanel" class="card hidden" style="position: absolute; right: 20px; top: 80px; width: 350px; padding: 24px; border-radius: 16px; border: 1px solid #334155; max-height: calc(100vh - 120px); overflow-y: auto;">
                 <h2 style="font-family: var(--font-heading); color: var(--accent); border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px;">Live Rescue Details</h2>
                 
                 <h3 style="color:#94a3b8; font-size:14px; margin-bottom:5px;">Patient Information</h3>
                 <div style="background:#0f172a; border-radius:8px; padding:12px; margin-bottom:15px; border:1px solid #334155;">
-                    <p style="font-size:13px;">Victims Count: <strong id="vpInfoCount" style="color:var(--warning);">1</strong></p>
+                    <p style="font-size:13px;">Patient Count: <strong id="vpInfoCount" style="color:var(--warning);">1</strong></p>
                     <p style="font-size:13px; margin-top:4px;">Mobile: <strong id="vpInfoPhone" style="color:white;">--</strong></p>
                     <p style="font-size:13px; margin-top:4px;">Condition: <strong id="vpInfoCond" style="color:white;">--</strong></p>
                     <p style="font-size:13px; margin-top:4px;">Evacuation: <strong id="vpInfoStrat" style="color:white;">--</strong></p>
@@ -141,6 +207,12 @@
                     <p style="font-size:13px; margin-top:4px;">Ward/Bed: <strong id="vhInfoWard" style="color:white;">--</strong></p>
                     <p style="font-size:13px; margin-top:4px;">Desk Contact: <strong id="vhInfoContact" style="color:white;">--</strong></p>
                 </div>
+
+                <!-- Quick contact buttons at bottom of panel -->
+                <div style="display:flex; gap:8px; margin-top:16px;">
+                    <button onclick="callFromPatientDialog('hospital')" style="flex:1; background: rgba(59,130,246,0.15); border:1px solid #3b82f6; color:#3b82f6; padding:10px; border-radius:10px; font-size:13px; cursor:pointer; font-weight:600;">🏥 Hospital</button>
+                    <button onclick="callFromPatientDialog('driver')" style="flex:1; background: rgba(16,185,129,0.15); border:1px solid #10b981; color:#10b981; padding:10px; border-radius:10px; font-size:13px; cursor:pointer; font-weight:600;">🚑 Driver</button>
+                </div>
             </div>
 
             <!-- ============================================== -->
@@ -148,7 +220,7 @@
             <!-- ============================================== -->
             <div id="driverUI" class="module-overlay hidden">
                 <div class="card driver-dashboard" id="driverInitTools" style="z-index: 1000; left: 20px; top: 80px; width: 350px;">
-                     <h2 style="font-family: var(--font-heading); margin-bottom: 5px;">Rapido Driver Hub</h2>
+                     <h2 style="font-family: var(--font-heading); margin-bottom: 5px;">AMBULANCE Driver Hub</h2>
                      <p class="subtitle mb-2" id="dRegStatusText" style="font-size: 13px; color: var(--danger); font-weight:bold;">Driver Registrations CLOSED.</p>
                      
                      <div class="split-btn mb-2">
@@ -201,7 +273,7 @@
                 <div class="card driver-dashboard hidden" id="driverDashboard">
                     <h2>Active Rescue Mission</h2>
                     <div id="driverNegotiationPhase" class="negotiation-phase hidden">
-                        <p>Victim requested <strong>System Recommendation</strong>.</p>
+                        <p>Patient requested <strong>System Recommendation</strong>.</p>
                         <label>Select Best Hospital:</label>
                         <select id="dRecommendationSelect">
                             <option value="11">Doon Hospital (Nearest)</option>
@@ -216,15 +288,15 @@
                     
                     <div id="driverConfirmedPhase" class="confirmed-box hidden">
                         <h3>HOSPITAL CONFIRMED 🏥</h3>
-                        <p>Bed locked. Proceed immediately to Victim pickup.</p>
-                        <button class="btn btn-primary w-100 mt-2" onclick="callVictimFromDriver()">📞 Call Victim</button>
+                        <p>Bed locked. Proceed immediately to Patient pickup.</p>
+                        <button class="btn btn-primary w-100 mt-2" onclick="callPatientFromDriver()">📞 Call Patient</button>
                     </div>
                 </div>
 
             </div>
 
             <!-- ============================================== -->
-            <!-- 3. HOSPITAL GATEKEEPER MODULE                   -->
+            <!-- 3. HOSPITAL GATEKEEPER MODULE                  -->
             <!-- ============================================== -->
             <div id="hospitalUI" class="module-overlay hidden">
                 <div class="card hospital-dashboard">
@@ -237,16 +309,16 @@
                         <h3 id="hInquiryCondition">Condition: Cardiac Arrest</h3>
                         <p>Severity: <strong id="hSeverity">HIGH</strong></p>
                         <p>Patients Incoming: <strong id="hPatientCountVal" style="color:var(--warning);">1</strong></p>
-                        <p>From Driver Amb-1</p>
+                        <p>From AMBULANCE Amb-1</p>
                         
                         <div id="hospContactBox" class="mb-2" style="background:#0f172a; padding:15px; border:1px solid #3b82f6; border-radius:8px; margin-top: 15px;">
-                            <p style="color:#94a3b8; font-size:13px;">Victim Registered Number:</p>
+                            <p style="color:#94a3b8; font-size:13px;">Patient Registered Number:</p>
                             <h3 id="hPatientPhone" style="color:white;">--</h3>
-                            <button class="btn btn-success mt-2 w-100" onclick="alert('Dialing Victim: ' + document.getElementById('hPatientPhone').innerText)">📞 Dial Victim Manually</button>
+                            <button class="btn btn-success mt-2 w-100" onclick="alert('Dialing Patient: ' + document.getElementById('hPatientPhone').innerText)">📞 Dial Patient Manually</button>
                         </div>
                         
                         <div class="form-group mt-2 mb-2">
-                            <label style="color:white; font-size:13px; display:block; margin-bottom:5px;">Enter Hospital Desk Phone No (Send to Victim):</label>
+                            <label style="color:white; font-size:13px; display:block; margin-bottom:5px;">Enter Hospital Desk Phone No (Send to Patient):</label>
                             <input type="text" id="hospDeskPhoneInput" placeholder="+91 Hospital Reception..." style="width:100%; padding:8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:white;">
                         </div>
 
@@ -260,11 +332,11 @@
                     <div id="hospitalConfirmedTools" class="confirmed-tools hidden">
                         <h3>Mission Active</h3>
                         
-                        <!-- NEW: Doctor Request Popup inside Hospital Tool -->
+                        <!-- Doctor Request Popup inside Hospital Tool -->
                         <div id="hospHalfwayBox" class="inquiry-box hidden mb-2" style="border-color: var(--warning); margin-top: 15px;">
                             <div class="flashing-alert" style="background: var(--warning);">SPECIALIST REQUESTED</div>
                             <h3 style="margin-top:20px; color:white;">Halfway Doctor Requested</h3>
-                            <p>Victim is requesting a specialist to meet the ambulance en route.</p>
+                            <p>Patient is requesting a specialist to meet the ambulance en route.</p>
                             <div class="split-btn mt-2">
                                 <button class="btn btn-danger w-100" onclick="replyHalfway(false)">REJECT</button>
                                 <button class="btn btn-success w-100" onclick="replyHalfway(true)">APPROVE</button>
@@ -272,7 +344,7 @@
                         </div>
 
                         <button class="btn btn-secondary w-100 mb-2 mt-2" onclick="alert('Bed 404 Fast-Tracked')">Allocate Fast-Track Bed</button>
-                        <button class="btn btn-primary w-100 mb-2" onclick="alert('Digital Triage Sent to Driver Screen!')">Send Triage Checklist to Driver</button>
+                        <button class="btn btn-primary w-100 mb-2" onclick="alert('Digital Triage Sent to AMBULANCE Driver Screen!')">Send Triage Checklist to Driver</button>
                     </div>
 
                     <!-- Permanent Registered Cases -->
