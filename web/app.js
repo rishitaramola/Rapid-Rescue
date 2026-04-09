@@ -299,8 +299,9 @@ function driverReject() {
 function driverAccept() {
     clearInterval(StateHub.pingTimerInt);
     document.getElementById('driverPingOverlay').classList.add('hidden');
-    // We intentionally don't explicitly show 'driverDashboard' here anymore 
-    // because standard flow switches to tracking UI.
+    
+    // RESTORED: We MUST show the driverDashboard so they can see the Negotiation phase if applicable
+    document.getElementById('driverDashboard').classList.remove('hidden');
     
     alert("Ride accepted. Awaiting Hospital Confirmation... Meanwhile, your GPS is routing to Victim.");
     
