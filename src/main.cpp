@@ -1,62 +1,75 @@
 #include "../include/graph.h"
 #include "../include/dijkstra.h"
 #include "../include/assignment.h"
+#include <iostream>
+
+using namespace std;
 
 int main() {
+    cout << "=============================================" << endl;
+    cout << "     SMART AMBULANCE ROUTING SYSTEM" << endl;
+    cout << "     Phase 3: Routing + Hungarian Assignment" << endl;
+    cout << "=============================================" << endl;
 
-    cout << "========================================" << endl;
-    cout << "   Smart Ambulance Routing System" << endl;
-    cout << "========================================" << endl;
+    // Hardcode Map (8 Locations)
+    V = 8;
+    addEdge(0, 1, 4);
+    addEdge(0, 2, 3);
+    addEdge(1, 2, 1);
+    addEdge(1, 3, 6);
+    addEdge(2, 4, 5);
+    addEdge(3, 5, 4);
+    addEdge(3, 6, 2);
+    addEdge(4, 6, 3);
+    addEdge(5, 7, 5);
+    addEdge(6, 7, 2);
 
-    // --- City Map Input ---
-    cout << "\nEnter number of locations in city: ";
-    cin >> V;
+    printGraph();
 
-    int edges;
-    cout << "Enter number of roads: ";
-    cin >> edges;
+    // Setup Ambulances
+    vector<Ambulance> ambulances = {
+        {1, 0, true},
+        {2, 2, true},
+        {3, 6, true}
+    };
 
-    cout << "Enter each road (location1 location2 traveltime):" << endl;
-    for (int i = 0; i < edges; i++) {
-        int u, v, w;
-        cin >> u >> v >> w;
-        addEdge(u, v, w);
+    cout << "\n=== Ambulances ===" << endl;
+    for (auto& amb : ambulances) {
+        cout << "Ambulance " << amb.id << " -> Location " << amb.location << endl;
     }
 
-    // --- Ambulance Input ---
-    int numAmb;
-    cout << "\nEnter number of ambulances: ";
-    cin >> numAmb;
+    // Setup Accidents
+    vector<Accident> accidents = {
+        {1, 7, 1}, // 1 = Critical
+        {2, 5, 2}, // 2 = High
+        {3, 3, 3}  // 3 = Normal
+    };
 
-    vector<Ambulance> ambulances;
-    for (int i = 0; i < numAmb; i++) {
-        int loc;
-        cout << "Enter location of Ambulance " << i+1 << ": ";
-        cin >> loc;
-        ambulances.push_back({i+1, loc, true});
+    cout << "\n=== Emergency Requests ===" << endl;
+    for (auto& acc : accidents) {
+        string pLabel = (acc.priority == 1) ? "CRITICAL" : (acc.priority == 2) ? "HIGH" : "NORMAL";
+        cout << "Accident " << acc.id << " -> Location " << acc.location << " | Priority: " << pLabel << endl;
     }
 
-    // --- Accident Input ---
-    int numAcc;
-    cout << "\nEnter number of accidents: ";
-    cin >> numAcc;
+    // Setup Phase 3 Features (Hospitals & Doctors)
+    vector<Hospital> hospitals = {
+        {1, 1, 10, "Max Super Speciality Hospital"},
+        {2, 4, 8,  "Doon Govt Hospital"}
+    };
+    
+    // Load Doctor Queue
+    doctorQueue.push("Dr. Sharma (Cardiologist)");
+    doctorQueue.push("Dr. Verma (Trauma Surgeon)");
+    doctorQueue.push("Dr. Kapoor (Neurologist)");
 
-    vector<Accident> accidents;
-    for (int i = 0; i < numAcc; i++) {
-        int loc, pri;
-        cout << "Enter location of Accident " << i+1 << ": ";
-        cin >> loc;
-        cout << "Enter priority (1=Critical, 2=High, 3=Normal): ";
-        cin >> pri;
-        accidents.push_back({i+1, loc, pri});
-    }
-
-    // --- Processing ---
-    cout << "\nCalculating shortest paths..." << endl;
+    cout << "\n[Running Dijkstra for each ambulance...]" << endl;
+    
+    // Build and Print Cost Matrix
     vector<vector<int>> cost = buildCostMatrix(ambulances, accidents);
-
     printCostMatrix(cost, ambulances, accidents);
-    assignAmbulances(ambulances, accidents, cost);
+
+    // Call Hungarian Assignment with Phase 3 Hospital and Doctor logic
+    assignAmbulances(ambulances, accidents, cost, hospitals);
 
     return 0;
 }
