@@ -149,8 +149,13 @@
             <div id="driverUI" class="module-overlay hidden">
                 <div class="card driver-dashboard" id="driverInitTools" style="z-index: 1000; left: 20px; top: 80px; width: 350px;">
                      <h2 style="font-family: var(--font-heading); margin-bottom: 5px;">Rapido Driver Hub</h2>
-                     <p class="subtitle mb-2" style="font-size: 13px; color: #94a3b8;">Click anywhere on the map to login a new driver.</p>
+                     <p class="subtitle mb-2" id="dRegStatusText" style="font-size: 13px; color: var(--danger); font-weight:bold;">Driver Registrations CLOSED.</p>
                      
+                     <div class="split-btn mb-2">
+                         <button class="btn btn-success w-100" onclick="toggleDriverReg(true)">▶ Start Registration</button>
+                         <button class="btn btn-secondary w-100" onclick="toggleDriverReg(false)">⏹ Close Registration</button>
+                     </div>
+
                      <div id="driverRegistrationModal" class="hidden" style="background:#0f172a; border:2px solid var(--accent); border-radius:12px; padding:15px; margin-top:10px;">
                          <h3 style="color:white; margin-bottom:10px; font-size:16px;">Register New Ambulance</h3>
                          <div class="form-group mb-2">

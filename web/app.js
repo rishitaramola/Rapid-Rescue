@@ -128,6 +128,10 @@ map.on('click', function(e) {
 
         document.getElementById('victimFormCard').classList.remove('hidden');
     } else if (activeTab.includes('Driver')) {
+        if (!StateHub.driverRegOpen) {
+            alert("Registrations are currently closed. Please click '▶ Start Registration' first!");
+            return;
+        }
         StateHub.tempDriverLatLng = {lat, lng};
         document.getElementById('driverRegistrationModal').classList.remove('hidden');
     }
@@ -160,6 +164,18 @@ function submitDriverRegistration() {
 
 function spawnDriver(lat, lng) {}
 
+function toggleDriverReg(isOpen) {
+    StateHub.driverRegOpen = isOpen;
+    let sText = document.getElementById('dRegStatusText');
+    if (isOpen) {
+        sText.innerText = "Registrations OPEN. Click map to register a driver.";
+        sText.style.color = "var(--success)";
+    } else {
+        sText.innerText = "Driver Registrations CLOSED.";
+        sText.style.color = "var(--danger)";
+        document.getElementById('driverRegistrationModal').classList.add('hidden');
+    }
+}
 
 // ============================================
 // Central Hub State Machine
@@ -184,7 +200,8 @@ let StateHub = {
     goldenTimerInt: null,
     pingCount: 0, // Track which driver we are pinging
     victimPhone: '--',
-    patientCount: 1
+    patientCount: 1,
+    driverRegOpen: false
 };
 
 function switchModule(moduleName) {
