@@ -34,13 +34,6 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r
     maxZoom: 19, attribution: '© CartoDB'
 }).addTo(map);
 
-// FIX: Shared OSRM router using a stable public endpoint (routing.openstreetmap.de)
-// The default OSRM demo server (project-osrm.org) is rate-limited and blocks browser
-// requests, causing routes to silently fail — leaving only markers visible.
-const osrmRouter = L.Routing.osrmv1({
-    serviceUrl: 'https://routing.openstreetmap.de/routed-car/route/v1'
-});
-
 const nodeMarkers  = {};
 let   ambMarkers   = {};
 let   routeLines   = [];
@@ -93,15 +86,54 @@ function getNodeIdNearLatLng(lat, lng) {
     return best;
 }
 
-function drawPolylineRoute(latLngs, color) {
-    const line = L.polyline(latLngs, { color, weight: 7, opacity: 0.92, lineJoin: 'round', lineCap: 'round' }).addTo(map);
-    routeLines.push(line);
-    return line;
-}
-
 function clearRouteLines() {
     routeLines.forEach(l => map.removeLayer(l));
     routeLines = [];
+}
+
+// ============================================
+// OSRM Real Road Routing
+// Fetches actual road geometry from OSRM API
+// and draws it as a colored polyline on the map.
+// ============================================
+const OSRM_BASE = 'https://router.project-osrm.org/route/v1/driving';
+
+function fetchOsrmRoute(waypoints, color, onDone) {
+    if (waypoints.length < 2) {
+        if (onDone) onDone(null);
+        return;
+    }
+
+    const fallback = () => {
+        const latlngs = waypoints.map(w => [w.lat, w.lng]);
+        const line = L.polyline(latlngs, {
+            color, weight: 6, opacity: 0.75, dashArray: '10,6',
+            lineJoin: 'round', lineCap: 'round'
+        }).addTo(map);
+        routeLines.push(line);
+        if (onDone) onDone(line);
+    };
+
+    const coords = waypoints.map(w => `${w.lng},${w.lat}`).join(';');
+    const url = `${OSRM_BASE}/${coords}?overview=full&geometries=geojson`;
+
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.routes || !data.routes[0]) {
+                fallback();
+                return;
+            }
+            const geojson = data.routes[0].geometry;
+            const latlngs = geojson.coordinates.map(([lng, lat]) => [lat, lng]);
+            const line = L.polyline(latlngs, {
+                color, weight: 6, opacity: 0.92,
+                lineJoin: 'round', lineCap: 'round'
+            }).addTo(map);
+            routeLines.push(line);
+            if (onDone) onDone(line);
+        })
+        .catch(fallback);
 }
 
 // ============================================
@@ -171,21 +203,40 @@ function spawnDriver(lat, lng, name, phone, plate) {
     };
     ambulances.push(newAmb);
 
-    let html = `<div style="background:#3b82f6;width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 15px #3b82f6;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;" title="Click to Remove Driver">🚑</div>`;
+    // NOTE: Marker is NOT clickable to remove — only the Driver module
+    // can cancel/remove an ambulance (via removeAmbulance() in the sidebar list).
+    let html = `<div style="background:#3b82f6;width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 15px #3b82f6;display:flex;align-items:center;justify-content:center;font-size:14px;">🚑</div>`;
     let m = L.marker([lat, lng], {
         icon: L.divIcon({ className: 'custom-icon', html, iconSize: [34, 34], iconAnchor: [17, 17] })
     }).addTo(map);
 
-    m.on('click', (e) => {
-        L.DomEvent.stopPropagation(e);
-        if (newAmb.busy) { alert('Cannot remove an ambulance currently in an active rescue!'); return; }
-        map.removeLayer(m);
-        ambulances = ambulances.filter(a => a.id !== newAmb.id);
-        delete ambMarkers[newAmb.id];
-    });
-
     ambMarkers[newAmb.id] = m;
     return newAmb;
+}
+
+// Called ONLY from the Driver sidebar — asks for confirmation then removes
+function removeAmbulance(ambId) {
+    let amb = ambulances.find(a => a.id === ambId);
+    if (!amb) return;
+    if (amb.busy) {
+        alert('❌ Cannot remove an ambulance currently in an active rescue!');
+        return;
+    }
+    let confirmed = confirm(
+        `⚠️ Cancel & Remove Ambulance?\n\nDriver: ${amb.name}\nPlate: ${amb.plate}\n\nThis will take the ambulance offline permanently. Confirm?`
+    );
+    if (!confirmed) return;
+    map.removeLayer(ambMarkers[ambId]);
+    ambulances = ambulances.filter(a => a.id !== ambId);
+    delete ambMarkers[ambId];
+    // Remove the card from the sidebar list
+    let card = document.getElementById('amb-card-' + ambId);
+    if (card) card.remove();
+    // If list empty, restore placeholder
+    let list = document.getElementById('dRegisteredList');
+    if (list && list.children.length === 0) {
+        list.innerHTML = '<p style="color: #64748b; font-size: 13px; font-style: italic;">No fleet online yet.</p>';
+    }
 }
 
 // ============================================
@@ -251,11 +302,17 @@ function submitDriverRegistration() {
     let newAmb = spawnDriver(lat, lng, name, phone, plate);
 
     document.getElementById('driverRegistrationModal').classList.add('hidden');
+    // Clear form fields
+    document.getElementById('dRegName').value  = '';
+    document.getElementById('dRegPhone').value = '';
+    document.getElementById('dRegPlate').value = '';
 
-    let driverHtml = `<div style="background:rgba(59,130,246,0.1);border:1px solid #3b82f6;padding:10px;border-radius:6px;margin-bottom:8px;">
+    // Add card with a Remove button — only visible in Driver module
+    let driverHtml = `<div id="amb-card-${newAmb.id}" style="background:rgba(59,130,246,0.1);border:1px solid #3b82f6;padding:10px;border-radius:6px;margin-bottom:8px;">
         <p style="color:white;font-size:13px;font-weight:bold;">${name} (${plate})</p>
         <p style="color:#94a3b8;font-size:12px;margin-top:2px;">Contact: ${phone}</p>
         <p style="color:#3b82f6;font-size:12px;margin-top:5px;">Status: Online &amp; Mapped</p>
+        <button onclick="removeAmbulance(${newAmb.id})" style="margin-top:8px;width:100%;padding:6px;background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#ef4444;border-radius:5px;font-size:12px;cursor:pointer;font-weight:600;">🗑 Remove / Cancel</button>
     </div>`;
 
     let listContainer = document.getElementById('dRegisteredList');
@@ -301,7 +358,8 @@ let StateHub = {
     pingCount:        0,
     victimPhone:      '--',
     patientCount:     1,
-    driverRegOpen:    false
+    driverRegOpen:    false,
+    missionPanelReady: false
 };
 
 function switchModule(moduleName) {
@@ -310,6 +368,14 @@ function switchModule(moduleName) {
     document.querySelectorAll('.module-overlay').forEach(el => el.classList.add('hidden'));
     document.getElementById(moduleName + 'UI').classList.remove('hidden');
     setTimeout(() => { map.invalidateSize(); }, 300);
+
+    // Show the patient mission panel whenever the Patient tab is active and mission is ongoing
+    if (moduleName === 'victim') {
+        maybeShowPatientMissionPanel();
+    } else {
+        // Hide the panel when in Driver or Hospital tab
+        document.getElementById('patientMissionCard').classList.add('hidden');
+    }
 }
 
 function updateStatusUI(stepNumber) {
@@ -434,9 +500,11 @@ function driverSubmitRecommendation() {
 }
 
 // ============================================
-// Patient Contact Dialog (shown after confirmation)
+// Patient Active Mission Panel
+// Shown ONLY in the Patient tab after hospital confirmation.
+// Persists until the patient reaches the hospital (not closeable by user).
 // ============================================
-function showPatientContactDialog() {
+function showPatientMissionPanel() {
     let hospName = '--', hospContact = '--', driverName = '--', driverPhone = '--', driverPlate = '--';
     if (StateHub.selectedHospitalId) {
         let n = graphNodes.find(x => x.id == StateHub.selectedHospitalId);
@@ -449,18 +517,34 @@ function showPatientContactDialog() {
         driverPhone = assignedAmb.phone || '+91 (Dispatched)';
         driverPlate = assignedAmb.plate || 'UKXX-XXXX';
     }
+    // Populate the persistent panel
     document.getElementById('pdHospName').innerText    = hospName;
     document.getElementById('pdHospContact').innerText = hospContact;
     document.getElementById('pdDriverName').innerText  = driverName;
     document.getElementById('pdDriverPhone').innerText = driverPhone;
     document.getElementById('pdDriverPlate').innerText = driverPlate;
-    let dlg = document.getElementById('patientContactDialog');
-    dlg.style.display = 'flex'; dlg.classList.remove('hidden');
+
+    // Show ONLY if patient module is active — else it waits until they switch to Patient tab
+    StateHub.missionPanelReady = true;
+    let activeTab = document.querySelector('.tab-btn.active');
+    if (activeTab && activeTab.innerText.includes('Patient')) {
+        let panel = document.getElementById('patientMissionCard');
+        panel.classList.remove('hidden');
+    }
 }
 
-function closePatientContactDialog() {
-    let dlg = document.getElementById('patientContactDialog');
-    dlg.style.display = 'none'; dlg.classList.add('hidden');
+// Called when switching to Patient tab so the panel appears immediately if mission is active
+function maybeShowPatientMissionPanel() {
+    if (StateHub.missionPanelReady) {
+        document.getElementById('patientMissionCard').classList.remove('hidden');
+    }
+}
+
+// Hidden close — called only programmatically when patient arrives at hospital
+function dismissPatientMissionPanel() {
+    let panel = document.getElementById('patientMissionCard');
+    panel.classList.add('hidden');
+    StateHub.missionPanelReady = false;
 }
 
 function callFromPatientDialog(type) {
@@ -505,13 +589,11 @@ function hospitalConfirm() {
     updateStatusUI(4);
     startGoldenHour();
 
-    document.getElementById('victimFinalDetails').classList.remove('hidden');
     let hospName = 'System Selected';
     if (StateHub.selectedHospitalId) {
         let n = graphNodes.find(x => x.id == StateHub.selectedHospitalId);
         if (n) hospName = n.name;
     }
-    document.getElementById('vDetailHospName').innerText = 'Hospital: ' + hospName;
 
     let deskPhone = document.getElementById('hospDeskPhoneInput').value || '+91 (Hospital Reception)';
     let vWard     = (StateHub.severity == 1 ? 'ICU (Trauma) - Bed 04' : 'ER Triage Area - Bed 12');
@@ -530,11 +612,8 @@ function hospitalConfirm() {
     document.getElementById('vhInfoWard').innerText    = vWard;
     document.getElementById('vhInfoContact').innerText = deskPhone;
 
-    document.getElementById('victimFinalDetails').classList.add('hidden');
-    document.getElementById('victimActiveMissionPanel').classList.remove('hidden');
-
-    // Show patient contact dialog
-    showPatientContactDialog();
+    // Show the persistent patient mission panel (Patient tab only)
+    showPatientMissionPanel();
 
     let caseHtml = `<div style="background:rgba(16,185,129,0.1);border:1px solid #10b981;padding:10px;border-radius:6px;">
         <p style="color:white;font-size:13px;font-weight:bold;">Patient: ${StateHub.victimPhone} (Count: ${StateHub.patientCount})</p>
@@ -628,18 +707,32 @@ function callPatientFromDriver() {
 // Route Drawing using Dijkstra + Graph Polylines
 // ============================================
 
+// ============================================
+// Route Drawing — OSRM Real Road Routes
+// Uses actual road network, falls back to
+// straight-line segments on network error.
+// ============================================
+
 function drawDriverToVictimRoute() {
     if (!StateHub.victimLatLng) return;
     let assignedAmb = ambulances.find(a => a.id == StateHub.assignedAmbId) || ambulances[0];
     if (!assignedAmb) return;
     clearRouteLines();
+
+    // Build waypoints through Dijkstra graph nodes for road-realistic routing
     const driverNodeId = getNodeIdNearLatLng(assignedAmb.lat, assignedAmb.lng);
     const victimNodeId = StateHub.victimNodeId || getNodeIdNearLatLng(StateHub.victimLatLng.lat, StateHub.victimLatLng.lng);
     const path = dijkstra(driverNodeId, victimNodeId);
-    if (path.length === 0) return;
-    const latLngs = [[assignedAmb.lat, assignedAmb.lng], ...pathToLatLngs(path), [StateHub.victimLatLng.lat, StateHub.victimLatLng.lng]];
-    const line = drawPolylineRoute(latLngs, '#10b981');
-    map.fitBounds(line.getBounds(), { padding: [50, 50] });
+
+    const waypoints = [
+        { lat: assignedAmb.lat, lng: assignedAmb.lng },
+        ...pathToLatLngs(path).map(([lat, lng]) => ({ lat, lng })),
+        { lat: StateHub.victimLatLng.lat, lng: StateHub.victimLatLng.lng }
+    ];
+
+    fetchOsrmRoute(waypoints, '#10b981', (line) => {
+        map.fitBounds(line.getBounds(), { padding: [50, 50] });
+    });
 }
 
 function drawFinalRoute() {
@@ -649,17 +742,38 @@ function drawFinalRoute() {
     const hosp = graphNodes.find(n => n.id == StateHub.selectedHospitalId);
     if (!hosp) return;
     clearRouteLines();
+
     const driverNodeId = getNodeIdNearLatLng(assignedAmb.lat, assignedAmb.lng);
     const victimNodeId = StateHub.victimNodeId || getNodeIdNearLatLng(StateHub.victimLatLng.lat, StateHub.victimLatLng.lng);
+
     const path1 = dijkstra(driverNodeId, victimNodeId);
-    if (path1.length > 0) {
-        drawPolylineRoute([[assignedAmb.lat, assignedAmb.lng], ...pathToLatLngs(path1), [StateHub.victimLatLng.lat, StateHub.victimLatLng.lng]], '#10b981');
-    }
+    const waypointsLeg1 = [
+        { lat: assignedAmb.lat, lng: assignedAmb.lng },
+        ...pathToLatLngs(path1).map(([lat, lng]) => ({ lat, lng })),
+        { lat: StateHub.victimLatLng.lat, lng: StateHub.victimLatLng.lng }
+    ];
+
     const path2 = dijkstra(victimNodeId, hosp.id);
-    if (path2.length > 0) {
-        const line2 = drawPolylineRoute([[StateHub.victimLatLng.lat, StateHub.victimLatLng.lng], ...pathToLatLngs(path2)], '#ef4444');
-        map.fitBounds(line2.getBounds(), { padding: [50, 50] });
-    }
+    const waypointsLeg2 = [
+        { lat: StateHub.victimLatLng.lat, lng: StateHub.victimLatLng.lng },
+        ...pathToLatLngs(path2).map(([lat, lng]) => ({ lat, lng })),
+        { lat: hosp.lat, lng: hosp.lng }
+    ];
+
+    // Draw leg 1: driver → victim (green)
+    fetchOsrmRoute(waypointsLeg1, '#10b981', (line1) => {
+        if (line1) map.fitBounds(line1.getBounds(), { padding: [50, 50] });
+    });
+
+    // Draw leg 2: victim → hospital (red)
+    fetchOsrmRoute(waypointsLeg2, '#ef4444', (line2) => {
+        if (line2) {
+            // In case leg1 already adjusted bounds, just extend to include leg2 as well
+            const currentBounds = map.getBounds();
+            currentBounds.extend(line2.getBounds());
+            map.fitBounds(currentBounds, { padding: [50, 50] });
+        }
+    });
 }
 
 // ============================================
