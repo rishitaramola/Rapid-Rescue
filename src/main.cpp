@@ -1,75 +1,1 @@
-#include "../include/graph.h"
-#include "../include/dijkstra.h"
-#include "../include/assignment.h"
-#include <iostream>
-
-using namespace std;
-
-int main() {
-    cout << "=============================================" << endl;
-    cout << "     SMART AMBULANCE ROUTING SYSTEM" << endl;
-    cout << "     Phase 3: Routing + Hungarian Assignment" << endl;
-    cout << "=============================================" << endl;
-
-    // Hardcode Map (8 Locations)
-    V = 8;
-    addEdge(0, 1, 4);
-    addEdge(0, 2, 3);
-    addEdge(1, 2, 1);
-    addEdge(1, 3, 6);
-    addEdge(2, 4, 5);
-    addEdge(3, 5, 4);
-    addEdge(3, 6, 2);
-    addEdge(4, 6, 3);
-    addEdge(5, 7, 5);
-    addEdge(6, 7, 2);
-
-    printGraph();
-
-    // Setup Ambulances
-    vector<Ambulance> ambulances = {
-        {1, 0, true},
-        {2, 2, true},
-        {3, 6, true}
-    };
-
-    cout << "\n=== Ambulances ===" << endl;
-    for (auto& amb : ambulances) {
-        cout << "Ambulance " << amb.id << " -> Location " << amb.location << endl;
-    }
-
-    // Setup Accidents
-    vector<Accident> accidents = {
-        {1, 7, 1}, // 1 = Critical
-        {2, 5, 2}, // 2 = High
-        {3, 3, 3}  // 3 = Normal
-    };
-
-    cout << "\n=== Emergency Requests ===" << endl;
-    for (auto& acc : accidents) {
-        string pLabel = (acc.priority == 1) ? "CRITICAL" : (acc.priority == 2) ? "HIGH" : "NORMAL";
-        cout << "Accident " << acc.id << " -> Location " << acc.location << " | Priority: " << pLabel << endl;
-    }
-
-    // Setup Phase 3 Features (Hospitals & Doctors)
-    vector<Hospital> hospitals = {
-        {1, 1, 10, "Max Super Speciality Hospital"},
-        {2, 4, 8,  "Doon Govt Hospital"}
-    };
-    
-    // Load Doctor Queue
-    doctorQueue.push("Dr. Sharma (Cardiologist)");
-    doctorQueue.push("Dr. Verma (Trauma Surgeon)");
-    doctorQueue.push("Dr. Kapoor (Neurologist)");
-
-    cout << "\n[Running Dijkstra for each ambulance...]" << endl;
-    
-    // Build and Print Cost Matrix
-    vector<vector<int>> cost = buildCostMatrix(ambulances, accidents);
-    printCostMatrix(cost, ambulances, accidents);
-
-    // Call Hungarian Assignment with Phase 3 Hospital and Doctor logic
-    assignAmbulances(ambulances, accidents, cost, hospitals);
-
-    return 0;
-}
+#include "../include/graph.h"#include "../include/dijkstra.h"#include "../include/assignment.h"#include <iostream>using namespace std;int main() {    cout << "=============================================" << endl;    cout << "     SMART AMBULANCE ROUTING SYSTEM" << endl;    cout << "     Phase 3: Routing + Hungarian Assignment" << endl;    cout << "=============================================" << endl;    V = 8;    addEdge(0, 1, 4);    addEdge(0, 2, 3);    addEdge(1, 2, 1);    addEdge(1, 3, 6);    addEdge(2, 4, 5);    addEdge(3, 5, 4);    addEdge(3, 6, 2);    addEdge(4, 6, 3);    addEdge(5, 7, 5);    addEdge(6, 7, 2);    printGraph();    vector<Ambulance> ambulances = {        {1, 0, true},        {2, 2, true},        {3, 6, true}    };    cout << "\n=== Ambulances ===" << endl;    for (auto& amb : ambulances) {        cout << "Ambulance " << amb.id << " -> Location " << amb.location << endl;    }    vector<Accident> accidents = {        {1, 7, 1},         {2, 5, 2},         {3, 3, 3}      };    cout << "\n=== Emergency Requests ===" << endl;    for (auto& acc : accidents) {        string pLabel = (acc.priority == 1) ? "CRITICAL" : (acc.priority == 2) ? "HIGH" : "NORMAL";        cout << "Accident " << acc.id << " -> Location " << acc.location << " | Priority: " << pLabel << endl;    }    vector<Hospital> hospitals = {        {1, 1, 10, "Max Super Speciality Hospital"},        {2, 4, 8,  "Doon Govt Hospital"}    };    doctorQueue.push("Dr. Sharma (Cardiologist)");    doctorQueue.push("Dr. Verma (Trauma Surgeon)");    doctorQueue.push("Dr. Kapoor (Neurologist)");    cout << "\n[Running Dijkstra for each ambulance...]" << endl;    vector<vector<int>> cost = buildCostMatrix(ambulances, accidents);    printCostMatrix(cost, ambulances, accidents);    assignAmbulances(ambulances, accidents, cost, hospitals);    return 0;}
