@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RapidRescue Ecosystem</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="top-nav">
+        <div class="logo">🚑 RapidRescue Ecosystem</div>
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchModule('victim')">📱 Patient</button>
+            <button class="tab-btn" onclick="switchModule('driver')">🚓 Driver</button>
+            <button class="tab-btn" onclick="switchModule('hospital')">🏥 Hospital</button>
+        </div>
+        <div class="golden-hour-container">
+            ⏱ Golden Hour: <span id="goldenHourClock">00:00</span>
+        </div>
+    </header>
+    <div class="main-container">
+        <main class="map-area">
+            <div id="map"></div>
+            <div id="victimUI" class="module-overlay hidden">
+                <div class="location-search-bar card" id="victimLocationBar" style="position:absolute; top:20px; left:50%; transform:translateX(-50%); padding:10px; display:flex; gap:10px; width:400px; border-radius:30px; z-index:100;">
+                    <input type="text" id="vLocationSearch" placeholder="Enter manually (e.g., ISBT)..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #334155; background:#0f172a; color:white; outline:none;">
+                    <button class="btn btn-secondary" style="border-radius:20px; padding: 10px 20px;" onclick="simulateGeoSearch()">📍 GPS</button>
+                </div>
+                <div class="card victim-form" id="victimFormCard" style="top: 80px;">
+                    <h2>Create Emergency Request</h2>
+                    <p class="subtitle">Click on the map to set location, then fill this form.</p>
+                    <div class="form-group">
+                        <label>Number of Patients:</label>
+                        <input type="number" id="vPatientCount" value="1" min="1" max="15">
+                    </div>
+                    <div class="form-group">
+                        <label>Condition / Specific Detail:</label>
+                        <input type="text" id="vCondition" placeholder="e.g. Cardiac Arrest, Severe Fracture">
+                    </div>
+                    <div class="form-group">
+                        <label>Severity Level:</label>
+                        <select id="vSeverity">
+                            <option value="1">High (Critical) - Immediate Action</option>
+                            <option value="2">Moderate - Stable but urgent</option>
+                            <option value="3">Low - Non-life threatening</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Hospital Choice Logic:</label>
+                        <select id="vHospLogic" onchange="toggleHospList()">
+                            <option value="system">Option B: Driver/System Recommendation</option>
+                            <option value="specific">Option A: Choose Specific Hospital</option>
+                        </select>
+                        <select id="vSpecificHosp" class="hidden mt-2">
+                            <option value="11">Doon Hospital</option>
+                            <option value="12">Max Hospital</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Evacuation Strategy:</label>
+                        <select id="vStrategy">
+                            <option value="full">Full Evacuation to Hospital</option>
+                            <option value="halfway">Meet Halfway</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+    <label>Patient Mobile Number:</label>
+    <input 
+        type="text" 
+        id="vInitPhone" 
+        placeholder="Enter 10-digit phone number"
+        maxlength="10"
+        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+    >
+                    </div>
+                    <div class="split-btn mt-2">
+                        <button class="btn btn-secondary w-100" onclick="cancelVictimIntake()">CANCEL</button>
+                        <button class="btn btn-danger w-100" id="btnSubmitVictim">INITIATE RESCUE CHAIN</button>
+                    </div>
+                </div>
+                <div class="status-tracker card" id="victimStatusTracker">
+                    <h3>Live Status</h3>
+                    <div class="status-steps">
+                        <div class="step pending" id="step1">Searching for Driver</div>
+                        <div class="step pending" id="step2">Driver Assigned</div>
+                        <div class="step pending" id="step3">Waiting for Hospital Conf.</div>
+                        <div class="step pending" id="step4">Rescue Confirmed</div>
+                    </div>
+                </div>
+                <div id="patientMissionCard" class="card hidden" style="
+                    position: absolute; right: 20px; margin-top: 0;
+                    top: 20px; width: 380px; z-index: 500;
+                    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+                    border: 2px solid #10b981; border-radius: 16px;
+                    padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 30px rgba(16,185,129,0.15);
+                    max-height: calc(100vh - 120px); overflow-y: auto; overflow-x: hidden;
+                    animation: slideUp 0.4s ease;">
+                    <div style="text-align:center; margin-bottom: 20px;">
+                        <div style="font-size: 36px; margin-bottom: 6px;">🚑</div>
+                        <h2 style="font-family: var(--font-heading); color: #10b981; font-size: 18px; margin-bottom: 4px; letter-spacing:0.5px;">RESCUE IN PROGRESS</h2>
+                        <p style="color: #94a3b8; font-size: 13px;">Ambulance dispatched. Bed reserved. Stay calm &amp; keep your phone handy.</p>
+                    </div>
+                    <div style="background:#0f172a; border-radius: 12px; padding: 14px; margin-bottom: 12px; border: 1px solid #1e293b;">
+                        <p style="color:#64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">🏥 Assigned Hospital</p>
+                        <p id="pdHospName" style="color: white; font-weight: 700; font-size: 15px; margin-bottom: 3px;">--</p>
+                        <p id="pdHospContact" style="color: #3b82f6; font-size: 13px;">--</p>
+                    </div>
+                    <div style="background:#0f172a; border-radius: 12px; padding: 14px; margin-bottom: 16px; border: 1px solid #10b981;">
+                        <p style="color:#64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">🚑 Driver / Ambulance</p>
+                        <p id="pdDriverName" style="color: white; font-weight: 700; font-size: 15px; margin-bottom: 3px;">--</p>
+                        <p id="pdDriverPhone" style="color: #10b981; font-size: 13px; margin-bottom: 2px;">--</p>
+                        <p id="pdDriverPlate" style="color: #fbbf24; font-size: 12px;">--</p>
+                    </div>
+                    <div style="background:#0f172a; border-radius: 12px; padding: 14px; margin-bottom: 16px; border: 1px solid #334155;">
+                        <p style="color:#64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">📋 Case Details</p>
+                        <p style="font-size:13px; color:white;">Patients: <strong id="vpInfoCount" style="color:var(--warning);">--</strong></p>
+                        <p style="font-size:13px; color:white; margin-top:4px;">Contact: <strong id="vpInfoPhone">--</strong></p>
+                        <p style="font-size:13px; color:white; margin-top:4px;">Condition: <strong id="vpInfoCond">--</strong></p>
+                        <p style="font-size:13px; color:white; margin-top:4px;">Strategy: <strong id="vpInfoStrat">--</strong></p>
+                        <p style="font-size:13px; color:white; margin-top:4px;">Ward/Bed: <strong id="vhInfoWard" style="color:#10b981;">--</strong></p>
+                        <p style="font-size:13px; color:white; margin-top:4px;">Desk: <strong id="vhInfoContact" style="color:#3b82f6;">--</strong></p>
+                        <p id="vdInfoName" style="display:none;"></p>
+                        <p id="vdInfoPhone" style="display:none;"></p>
+                        <p id="vdInfoCar" style="display:none;"></p>
+                        <p id="vhInfoName" style="display:none;"></p>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button onclick="callFromPatientDialog('hospital')" style="
+                            background: linear-gradient(135deg, #3b82f6, #2563eb);
+                            color: white; border: none; padding: 13px; border-radius: 12px;
+                            font-size: 15px; font-weight: 600; cursor: pointer;
+                            display: flex; align-items: center; justify-content: center; gap: 8px;
+                            box-shadow: 0 4px 15px rgba(59,130,246,0.35);
+                            transition: transform 0.15s, box-shadow 0.15s;"
+                            onmouseover="this.style.transform='translateY(-2px)'"
+                            onmouseout="this.style.transform='translateY(0)'">
+                            🏥 Call Hospital
+                        </button>
+                        <button onclick="callFromPatientDialog('driver')" style="
+                            background: linear-gradient(135deg, #10b981, #059669);
+                            color: white; border: none; padding: 13px; border-radius: 12px;
+                            font-size: 15px; font-weight: 600; cursor: pointer;
+                            display: flex; align-items: center; justify-content: center; gap: 8px;
+                            box-shadow: 0 4px 15px rgba(16,185,129,0.35);
+                            transition: transform 0.15s, box-shadow 0.15s;"
+                            onmouseover="this.style.transform='translateY(-2px)'"
+                            onmouseout="this.style.transform='translateY(0)'">
+                            🚑 Call Driver / Ambulance
+                        </button>
+                        <button id="btnRequestHalfway" class="hidden" onclick="requestHalfwayDoc()" style="
+                            background: linear-gradient(135deg, #f59e0b, #d97706);
+                            color: white; border: none; padding: 13px; border-radius: 12px;
+                            font-size: 15px; font-weight: 600; cursor: pointer;
+                            box-shadow: 0 4px 15px rgba(245,158,11,0.35);
+                            transition: transform 0.15s;"
+                            onmouseover="this.style.transform='translateY(-2px)'"
+                            onmouseout="this.style.transform='translateY(0)'">
+                            🚨 Request Halfway Doctor
+                        </button>
+                    </div>
+                    <p style="color:#475569; font-size:11px; text-align:center; margin-top:14px;">This panel stays active until you reach the hospital.</p>
+                </div>
+            </div>
+            <div id="driverUI" class="module-overlay hidden">
+                <div class="card driver-dashboard" id="driverInitTools" style="z-index: 1000; left: 20px; top: 80px; width: 350px;">
+                     <h2 style="font-family: var(--font-heading); margin-bottom: 5px;">AMBULANCE Driver Hub</h2>
+                     <p class="subtitle mb-2" id="dRegStatusText" style="font-size: 13px; color: var(--danger); font-weight:bold;">Driver Registrations CLOSED.</p>
+                     <div class="split-btn mb-2">
+                         <button class="btn btn-success w-100" onclick="toggleDriverReg(true)">▶ Start Registration</button>
+                         <button class="btn btn-secondary w-100" onclick="toggleDriverReg(false)">⏹ Close Registration</button>
+                     </div>
+                     <div id="driverRegistrationModal" class="hidden" style="background:#0f172a; border:2px solid var(--accent); border-radius:12px; padding:15px; margin-top:10px;">
+                         <h3 style="color:white; margin-bottom:10px; font-size:16px;">Register New Ambulance</h3>
+                         <div class="form-group mb-2">
+                             <label style="color:#cbd5e1; font-size:12px; margin-bottom:4px; display:block;">Driver Name:</label>
+                             <input type="text" id="dRegName" placeholder="e.g., Rajesh Kumar" style="width:100%; padding:8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:white;">
+                         </div>
+                         <div class="form-group mb-2">
+                             <label style="color:#cbd5e1; font-size:12px; margin-bottom:4px; display:block;">Mobile Number:</label>
+                             <input type="text" id="dRegPhone" placeholder="+91..." style="width:100%; padding:8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:white;">
+                         </div>
+                         <div class="form-group mb-2">
+                             <label style="color:#cbd5e1; font-size:12px; margin-bottom:4px; display:block;">Vehicle Plate No:</label>
+                             <input type="text" id="dRegPlate" placeholder="UK07-AB-1234" style="width:100%; padding:8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:white;">
+                         </div>
+                         <div class="split-btn mt-2">
+                             <button class="btn btn-secondary w-100" onclick="document.getElementById('driverRegistrationModal').classList.add('hidden')">Cancel</button>
+                             <button class="btn btn-primary w-100" onclick="submitDriverRegistration()">Go Online</button>
+                         </div>
+                     </div>
+                     <h3 style="margin-top: 20px; color: #94a3b8; font-size: 14px; margin-bottom: 10px;">Registered Ambulances</h3>
+                     <div id="dRegisteredList">
+                         <p style="color: #64748b; font-size: 13px; font-style: italic;">No fleet online yet.</p>
+                     </div>
+                </div>
+                <div class="ping-overlay hidden" id="driverPingOverlay">
+                    <div class="ping-box">
+                        <div class="ping-pulse"></div>
+                        <h2>Incoming Dispatch!</h2>
+                        <h1 id="dPingETA">ETA: -- mins</h1>
+                        <p id="dPingCondition">Condition: Unknown</p>
+                        <div class="timer" id="pingTimer">15</div>
+                        <div class="split-btn">
+                            <button class="btn btn-secondary" onclick="driverReject()">REJECT</button>
+                            <button class="btn btn-success" onclick="driverAccept()">ACCEPT RIDE</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card driver-dashboard hidden" id="driverDashboard">
+                    <h2>Active Rescue Mission</h2>
+                    <div id="driverNegotiationPhase" class="negotiation-phase hidden">
+                        <p>Patient requested <strong>System Recommendation</strong>.</p>
+                        <label>Select Best Hospital:</label>
+                        <select id="dRecommendationSelect">
+                            <option value="11">Doon Hospital (Nearest)</option>
+                            <option value="12">Max Hospital (Specialized Trauma)</option>
+                        </select>
+                        <button class="btn btn-primary mt-2" onclick="driverSubmitRecommendation()">Route to Selected Hospital</button>
+                    </div>
+                    <div id="driverWaitingPhase" class="pending-box hidden">
+                        Waiting for Hospital to verify Specialist...
+                    </div>
+                    <div id="driverConfirmedPhase" class="confirmed-box hidden">
+                        <h3>HOSPITAL CONFIRMED 🏥</h3>
+                        <p>Bed locked. Proceed immediately to Patient pickup.</p>
+                        <button class="btn btn-primary w-100 mt-2" onclick="callPatientFromDriver()">📞 Call Patient</button>
+                    </div>
+                </div>
+            </div>
+            <div id="hospitalUI" class="module-overlay hidden">
+                <div class="card hospital-dashboard">
+                    <h2>Gatekeeper Verification Node</h2>
+                    <p>Manage incoming intakes and Specialist availability.</p>
+                    <div id="hospitalInquiryBox" class="inquiry-box hidden">
+                        <div class="flashing-alert">INQUIRY ALERT</div>
+                        <h3 id="hInquiryCondition">Condition: Cardiac Arrest</h3>
+                        <p>Severity: <strong id="hSeverity">HIGH</strong></p>
+                        <p>Patients Incoming: <strong id="hPatientCountVal" style="color:var(--warning);">1</strong></p>
+                        <p>From AMBULANCE Amb-1</p>
+                        <div id="hospContactBox" class="mb-2" style="background:#0f172a; padding:15px; border:1px solid #3b82f6; border-radius:8px; margin-top: 15px;">
+                            <p style="color:#94a3b8; font-size:13px;">Patient Registered Number:</p>
+                            <h3 id="hPatientPhone" style="color:white;">--</h3>
+                            <button class="btn btn-success mt-2 w-100" onclick="alert('Dialing Patient: ' + document.getElementById('hPatientPhone').innerText)">📞 Dial Patient Manually</button>
+                        </div>
+                        <div class="form-group mt-2 mb-2">
+                            <label style="color:white; font-size:13px; display:block; margin-bottom:5px;">Enter Hospital Desk Phone No (Send to Patient):</label>
+                            <input type="text" id="hospDeskPhoneInput" placeholder="+91 Hospital Reception..." style="width:100%; padding:8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:white;">
+                        </div>
+                        <div class="verification-actions">
+                            <button class="btn btn-success w-100 mb-2" onclick="hospitalConfirm()">[CONFIRM ADMISSION]</button>
+                            <button class="btn btn-danger w-100 mb-2" onclick="hospitalReject()">[REJECT / REFER]</button>
+                        </div>
+                    </div>
+                    <div id="hospitalConfirmedTools" class="confirmed-tools hidden">
+                        <h3>Mission Active</h3>
+                        <div id="hospHalfwayBox" class="inquiry-box hidden mb-2" style="border-color: var(--warning); margin-top: 15px;">
+                            <div class="flashing-alert" style="background: var(--warning);">SPECIALIST REQUESTED</div>
+                            <h3 style="margin-top:20px; color:white;">Halfway Doctor Requested</h3>
+                            <p>Patient is requesting a specialist to meet the ambulance en route.</p>
+                            <div class="split-btn mt-2">
+                                <button class="btn btn-danger w-100" onclick="replyHalfway(false)">REJECT</button>
+                                <button class="btn btn-success w-100" onclick="replyHalfway(true)">APPROVE</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary w-100 mb-2 mt-2" onclick="alert('Bed 404 Fast-Tracked')">Allocate Fast-Track Bed</button>
+                        <button class="btn btn-primary w-100 mb-2" onclick="alert('Digital Triage Sent to AMBULANCE Driver Screen!')">Send Triage Checklist to Driver</button>
+                    </div>
+                    <div id="hRegisteredCasesContainer" style="margin-top: 20px;">
+                        <h3 style="font-family: var(--font-heading); color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 5px; margin-bottom: 10px;">Registered Cases</h3>
+                        <div id="hRegisteredCasesList" style="display:flex; flex-direction:column; gap:10px;">
+                            <p style="color:#64748b; font-size:13px; text-align:center;">No cases registered yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
