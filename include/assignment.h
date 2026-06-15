@@ -3,8 +3,14 @@
 
 #include "graph.h"
 #include "dijkstra.h"
+
+#include <vector>     // ✅ REQUIRED
 #include <queue>
 #include <string>
+
+using namespace std;  // ✅ keep consistent with rest of your code
+
+// ================= STRUCTURES =================
 
 // Ambulance structure
 struct Ambulance {
@@ -20,27 +26,35 @@ struct Accident {
     int priority;   // 1 = critical, 2 = high, 3 = normal
 };
 
-// Hospital structure for priority checking
+// Hospital structure
 struct Hospital {
     int id;
     int location;
     int priorityFacility; // Higher is better
-    std::string name;
+    string name;
 };
 
-// Global Doctor Queue
-extern std::queue<std::string> doctorQueue;
+// ================= GLOBALS =================
 
-// Build cost matrix: cost[i][j] = time for ambulance i to reach accident j
+extern queue<string> doctorQueue;
+
+// ================= FUNCTIONS =================
+
+// Build cost matrix using UPDATED dijkstra (pair return)
 vector<vector<int>> buildCostMatrix(vector<Ambulance>& ambulances, vector<Accident>& accidents);
 
-// Evaluate Hospital Priority
+// Choose best hospital based on priority + distance
 int getBestHospital(vector<Hospital>& hospitals, int accidentLocation);
 
-// Phase 3 Optimal Assignment (Hungarian Alg + Priority Logic)
-void assignAmbulances(vector<Ambulance>& ambulances, vector<Accident>& accidents, vector<vector<int>>& cost, vector<Hospital>& hospitals);
+// Assignment logic (Hungarian + priority)
+void assignAmbulances(vector<Ambulance>& ambulances,
+                     vector<Accident>& accidents,
+                     vector<vector<int>>& cost,
+                     vector<Hospital>& hospitals);
 
 // Print cost matrix
-void printCostMatrix(vector<vector<int>>& cost, vector<Ambulance>& ambulances, vector<Accident>& accidents);
+void printCostMatrix(vector<vector<int>>& cost,
+                     vector<Ambulance>& ambulances,
+                     vector<Accident>& accidents);
 
 #endif

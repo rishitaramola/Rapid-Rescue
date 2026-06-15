@@ -1,1 +1,48 @@
-#include "../include/dijkstra.h"vector<int> dijkstra(int src) {    vector<int> dist(V, INF);    vector<int> parent(V, -1);    priority_queue<pair<int,int>, vector<pair<int,int>>, greater<pair<int,int>>> pq;    dist[src] = 0;    pq.push({0, src});    while (!pq.empty()) {        int d    = pq.top().first;           int node = pq.top().second;          pq.pop();        if (d > dist[node]) continue;        for (auto& edge : adj[node]) {            int neighbor = edge.first;            int weight   = edge.second;            if (dist[node] + weight < dist[neighbor]) {                dist[neighbor] = dist[node] + weight;                parent[neighbor] = node;                pq.push({dist[neighbor], neighbor});            }        }    }    return dist;}void printPath(int src, int dest, vector<int>& parent) {    if (parent[dest] == -1 && dest != src) {        cout << "No path found";        return;    }    vector<int> path;    int curr = dest;    while (curr != -1) {        path.push_back(curr);        curr = parent[curr];    }    for (int i = path.size() - 1; i >= 0; i--) {        cout << path[i];        if (i != 0) cout << " -> ";    }}
+#include "../include/dijkstra.h"
+#include <queue>     // ✅ ensure included
+#include <vector>
+#include <utility>   // ✅ for pair
+#include <functional> // ✅ for greater
+
+using namespace std;
+
+pair<vector<int>, vector<int>> dijkstra(int src) {
+
+    vector<int> dist(V, INF);
+    vector<int> parent(V, -1);
+
+    // Min-heap (distance, node)
+    priority_queue<
+        pair<int,int>,
+        vector<pair<int,int>>,
+        greater<pair<int,int>>
+    > pq;
+
+    dist[src] = 0;
+    pq.push({0, src});
+
+    while (!pq.empty()) {
+        auto top = pq.top();
+        pq.pop();
+
+        int d = top.first;
+        int node = top.second;
+
+        // Skip outdated entries
+        if (d != dist[node]) continue;
+
+        for (auto &edge : adj[node]) {
+            int neighbor = edge.first;
+            int weight = edge.second;
+
+            // Relaxation
+            if (dist[node] + weight < dist[neighbor]) {
+                dist[neighbor] = dist[node] + weight;
+                parent[neighbor] = node;
+                pq.push({dist[neighbor], neighbor});
+            }
+        }
+    }
+
+    return {dist, parent};
+}

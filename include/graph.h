@@ -19,5 +19,6 @@ extern vector<pair<int,int>> adj[MAX];
 // Function declarations
 void addEdge(int u, int v, int w);
 void printGraph();
+void clearGraph();
 
 #endif
