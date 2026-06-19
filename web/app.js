@@ -88,6 +88,28 @@ function dijkstra(startId, endId) {
     if (path[0] !== startId) return [];
     return path;
 }
+function getSortedAmbulancesByDistance(targetNodeId) {
+    const adj = buildAdjacency();
+    const dist = {}; const visited = new Set();
+    graphNodes.forEach(n => { dist[n.id] = Infinity; });
+    dist[targetNodeId] = 0;
+    const pq = [{ id: targetNodeId, cost: 0 }];
+    while (pq.length > 0) {
+        pq.sort((a, b) => a.cost - b.cost);
+        const { id: curr, cost: currCost } = pq.shift();
+        if (visited.has(curr)) continue;
+        visited.add(curr);
+        (adj[curr] || []).forEach(({ node: nbr, cost }) => {
+            const alt = currCost + cost;
+            if (alt < dist[nbr]) { dist[nbr] = alt; pq.push({ id: nbr, cost: alt }); }
+        });
+    }
+    let sortedAmbs = [...ambulances].filter(a => !a.busy).map(amb => {
+        return { amb: amb, cost: dist[amb.locationNodeId] };
+    });
+    sortedAmbs.sort((a, b) => a.cost - b.cost);
+    return sortedAmbs;
+}
 function pathToLatLngs(path) {
     return path.map(id => { const n = graphNodes.find(x => x.id === id); return [n.lat, n.lng]; });
 }
@@ -339,7 +361,8 @@ let StateHub = {
     victimPhone:      '--',
     patientCount:     1,
     driverRegOpen:    false,
-    missionPanelReady: false
+    missionPanelReady: false,
+    sortedAmbulances: []
 };
 function switchModule(moduleName) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -403,21 +426,25 @@ document.getElementById('btnSubmitVictim').addEventListener('click', () => {
 
     StateHub.appStatus = 'pinging';
     StateHub.pingCount = 0;
+    StateHub.sortedAmbulances = getSortedAmbulancesByDistance(StateHub.victimNodeId);
 
     setTimeout(() => triggerDriverPing(), 1000);
 });
 function triggerDriverPing() {
     StateHub.pingCount++;
-    if (StateHub.pingCount > 3) {
+    let maxPings = Math.min(3, StateHub.sortedAmbulances.length);
+    if (StateHub.pingCount > maxPings || maxPings === 0) {
         alert('CRITICAL WARNING: All nearby drivers rejected or timed out. Mission Failed.');
         StateHub.appStatus = 'idle';
         updateStatusUI(0);
         return;
     }
     StateHub.appStatus    = 'pinging';
-    StateHub.assignedAmbId = ambulances[StateHub.pingCount - 1]?.id || ambulances[0].id;
+    let currentOption = StateHub.sortedAmbulances[StateHub.pingCount - 1];
+    StateHub.assignedAmbId = currentOption.amb.id;
+    let eta = currentOption.cost;
     document.getElementById('dPingCondition').innerText = 'Condition: ' + StateHub.condition;
-    document.getElementById('dPingETA').innerText       = 'ETA: ' + (StateHub.pingCount * 3 + 1) + ' mins (Pinging Driver ' + StateHub.pingCount + ' / 3)';
+    document.getElementById('dPingETA').innerText       = 'ETA: ' + eta + ' mins (Pinging Nearest Driver ' + StateHub.pingCount + ')';
     document.getElementById('driverPingOverlay').classList.remove('hidden');
     let timeLeft = 15;
     document.getElementById('pingTimer').innerText = timeLeft;
