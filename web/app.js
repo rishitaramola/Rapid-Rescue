@@ -12,7 +12,15 @@ const graphNodes = [
     { id: 9,  name: "Rispana Pull",              lat: 30.2974, lng: 78.0384, type: "junction" },
     { id: 10, name: "GEU / GEHU",                lat: 30.2687, lng: 77.9945, type: "junction" },
     { id: 11, name: "Doon Hospital",             lat: 30.3193, lng: 78.0354, type: "hospital" },
-    { id: 12, name: "Max Hospital",              lat: 30.3662, lng: 78.0772, type: "hospital" }
+    { id: 12, name: "Max Hospital",              lat: 30.3662, lng: 78.0772, type: "hospital" },
+    { id: 13, name: "Kargi Chowk",               lat: 30.2852, lng: 78.0240, type: "junction" },
+    { id: 14, name: "Bengali Kothi",             lat: 30.2838, lng: 78.0391, type: "junction" },
+    { id: 15, name: "Fountain Chowk",            lat: 30.2900, lng: 78.0500, type: "junction" },
+    { id: 16, name: "Survey Chowk",              lat: 30.3247, lng: 78.0516, type: "junction" },
+    { id: 17, name: "Saharanpur Chowk",          lat: 30.3100, lng: 78.0200, type: "junction" },
+    { id: 18, name: "Shri Mahant Indiresh",      lat: 30.3047, lng: 78.0207, type: "hospital" },
+    { id: 19, name: "Synergy Hospital",          lat: 30.3375, lng: 78.0136, type: "hospital" },
+    { id: 20, name: "Kailash Hospital",          lat: 30.2908, lng: 78.0617, type: "hospital" }
 ];
 
 function validatePhoneNumber() {
@@ -32,7 +40,13 @@ const graphEdges = [
     [0, 2, 5],  [0, 8,  3],  [0, 11, 4],  [0, 7,  15],
     [2, 8, 4],  [8, 9,  8],  [9,  1, 10], [1, 10,  5],
     [3, 0, 10], [3, 6,  4],  [6,  5,  3], [5,  4,  2],
-    [7, 12, 5], [2, 11, 2],  [3,  1, 15]
+    [7, 12, 5], [2, 11, 2],  [3,  1, 15], 
+    // New Edges
+    [8, 17, 5], [17, 1, 10], [17, 18, 3], // Saharanpur Chowk connections
+    [13, 1, 5], [13, 9,  6], [13, 14, 5], // Kargi Chowk connections
+    [9, 15, 5], [9, 20, 8],               // Rispana connections (Fountain & Kailash)
+    [0, 16, 4], [16, 7, 10],              // Survey Chowk connections
+    [3, 19, 3]                            // Synergy Hospital connection
 ];
 const map = L.map('map').setView([30.3160, 78.0200], 13);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
@@ -192,9 +206,11 @@ function buildMapUI() {
         nodeMarkers[node.id] = m;
     });
 
-    // Spawn initial drivers
-    spawnDriver(30.2872, 78.0039);
-    spawnDriver(30.3340, 77.9540);
+    // Spawn initial drivers at crowded spots
+    spawnDriver(30.2852, 78.0240, "Driver Kargi", "+91 9876543210", "UK07-KA-1111"); // Kargi Chowk
+    spawnDriver(30.2838, 78.0391, "Driver Bengali", "+91 8765432109", "UK07-BE-2222"); // Bengali Kothi
+    spawnDriver(30.2872, 78.0039, "Driver ISBT", "+91 7654321098", "UK07-IS-3333"); // ISBT
+    spawnDriver(30.3243, 78.0418, "Driver ClockTower", "+91 6543210987", "UK07-CL-4444"); // Clock Tower
 }
 function spawnDriver(lat, lng, name, phone, plate) {
     let nearest = getNearestNode(lat, lng);
